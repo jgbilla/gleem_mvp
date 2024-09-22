@@ -72,6 +72,7 @@ if 'page' in st.session_state and st.session_state.page == "graph":
 
 # Todo: Query GPT-4 about capabilities of our models with a score based on the query. #jean - Working on it 
 # Todo: Try now button that links you to the model's website. 
+# Todo: Add feedback textbox to the bottom of the page. 
 
 
 #MVP-2
