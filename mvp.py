@@ -69,9 +69,11 @@ if 'page' in st.session_state and st.session_state.page == "graph":
 
 # Todo: Enter email to use (Check it's an actual email) ✅
     #Also saves the email to a Google Sheets for tracking 
-# Todo: Enter actual question otherwise reject submission
-# Todo: Query GPT-4 about capabilities of our models with a score based on the query. 
+
+# Todo: Query GPT-4 about capabilities of our models with a score based on the query. #jean - Working on it 
 # Todo: Try now button that links you to the model's website. 
 
 
-#Todo: MVP-2: Deployment potential cost. 
+#MVP-2
+#Todo: Deployment potential cost. 
+# Todo: Enter actual question otherwise reject submission 
