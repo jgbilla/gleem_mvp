@@ -12,11 +12,9 @@ import os
 import streamlit.components.v1 as components
 from datetime import datetime
 import webbrowser
+from google.oauth2.service_account import Credentials
 
-load_dotenv()
-
-openai_api_key = os.getenv('OPENAI_API_KEY')
-os.environ['OPENAI_API_KEY'] = openai_api_key
+os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
 client = OpenAI()
 
 # Set page config for wide layout
@@ -29,8 +27,9 @@ def is_valid_email(email):
 
 def log_email_to_sheet(email):
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name('./credentials/mvp_tracking.json', scope)
-    client = gspread.authorize(creds)
+    gsheets_creds = st.secrets["google_sheets"]
+    credentials = Credentials.from_service_account_info(gsheets_creds, scopes=scope)
+    client = gspread.authorize(credentials)
     sheet = client.open("User tracking").sheet1  # Adjust the sheet name as needed
 
     # Get all values from the sheet
@@ -84,8 +83,9 @@ def get_model_score(model, task):
 
 def submit_feedback(email, feedback):
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name('./credentials/mvp_tracking.json', scope)
-    client = gspread.authorize(creds)
+    gsheets_creds = st.secrets["google_sheets"]
+    credentials = Credentials.from_service_account_info(gsheets_creds, scopes=scope)
+    client = gspread.authorize(credentials)
     
     # Open the Google Sheets document
     sheet = client.open("User tracking")
@@ -103,8 +103,9 @@ def submit_feedback(email, feedback):
 
 def track_model_interaction(email):
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name('./credentials/mvp_tracking.json', scope)
-    client = gspread.authorize(creds)
+    gsheets_creds = st.secrets["google_sheets"]
+    credentials = Credentials.from_service_account_info(gsheets_creds, scopes=scope)
+    client = gspread.authorize(credentials)
     sheet = client.open("User tracking").worksheet("interaction_tracking")  # Use a specific worksheet for interactions
 
     # Get all values from the sheet

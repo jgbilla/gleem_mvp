@@ -1,3 +1,3 @@
 credentials
 venv
-.env
+/.streamlit/secrets.toml
