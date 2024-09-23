@@ -13,6 +13,7 @@ import streamlit.components.v1 as components
 from datetime import datetime
 import webbrowser
 from google.oauth2.service_account import Credentials
+from streamlit.components.v1 import html
 
 os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
 client = OpenAI()
@@ -124,7 +125,15 @@ def track_model_interaction(email):
     sheet.append_row([email, 1])
     return True, 1  # New email added, count is 1
     
-    return interactions
+def open_page(url):
+    open_script= """
+        <script type="text/javascript">
+            window.open('%s', '_blank').focus();
+        </script>
+    """ % (url)
+    html(open_script)
+
+
 # Page: Email Input
 if 'email' not in st.session_state:
     st.session_state.email = ""
@@ -178,7 +187,7 @@ if 'page' in st.session_state and st.session_state.page == "graph":
             st.markdown(f"<p style='font-size: 18px;'>{row['Explanation']}</p>", unsafe_allow_html=True)
             model_url = get_model_url(row['Model'])
             if st.button(f"Use {row['Model']}"):
-                webbrowser.open_new_tab(model_url)
+                open_page(model_url)
                 interactions = track_model_interaction(st.session_state.email)
 
     st.markdown("### We'd love to hear your feedback!")
