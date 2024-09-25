@@ -193,7 +193,7 @@ if st.session_state.page in ["main", "graph"]:
         # Display ranked list of models
         for index, row in st.session_state.scores.iterrows():
             expander_label = f"{index + 1}. {row['Model']} - Score: {row['Score']:.2f}"
-            with st.expander(expander_label, expanded=False):
+            with st.expander(expander_label, expanded=True):
                 st.markdown(f"""
                 <div style="font-size: 24px; font-weight: bold;">
                     {expander_label}
