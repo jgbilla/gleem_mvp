@@ -4,22 +4,17 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import re
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel
 import os
 import streamlit.components.v1 as components
 from datetime import datetime
-import webbrowser
 from google.oauth2.service_account import Credentials
 from streamlit.components.v1 import html
 
-os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
-client = OpenAI()
+if 'openai_client' not in st.session_state:
+    st.session_state.openai_client = OpenAI(api_key=st.secrets['OPENAI_API_KEY'])
 
-# Set page config for wide layout
-st.set_page_config(layout="wide")
 
 # Function to validate email
 def is_valid_email(email):
@@ -67,7 +62,7 @@ class Rating(BaseModel):
     explanation: str
 
 def get_model_score(model, task):
-    response = client.beta.chat.completions.parse(
+    response = st.session_state.openai_client.beta.chat.completions.parse(
             model="gpt-4o-mini-2024-07-18",
             response_format=Rating,
             temperature=0,
@@ -134,79 +129,97 @@ def open_page(url):
     html(open_script)
 
 
-# Page: Email Input
+# Set page config for wide layout
+st.set_page_config(layout="wide")
+
+# Initialize session state variables
+if 'page' not in st.session_state:
+    st.session_state.page = "email_input"
+if 'scores' not in st.session_state:
+    st.session_state.scores = None
 if 'email' not in st.session_state:
     st.session_state.email = ""
+if 'user_input' not in st.session_state:
+    st.session_state.user_input = ""
 
-st.title("Welcome to Gleem")
-email_input = st.text_input("Enter your email to continue:", key='email')
+# Page: Email Input
+if  st.session_state.page == "email_input":
+    if 'email' not in st.session_state:
+        st.session_state.email = ""
 
-if st.button("Submit Email"):
-    if is_valid_email(st.session_state.email):
-        log_email_to_sheet(st.session_state.email)
-        st.session_state.user_input = ""
-        st.session_state.page = "main"  # Proceed to the main app
-    else:
-        st.error("Please enter a valid email address.")
+    st.title("Welcome to Gleem")
+    email_input = st.text_input("Enter your email to continue:", key='email')
+
+    if st.button("Submit Email"):
+        if is_valid_email(st.session_state.email):
+            log_email_to_sheet(st.session_state.email)
+            st.session_state.user_input = ""
+            st.session_state.page = "main"  # Proceed to the main app
+            st.rerun()
+        else:
+            st.error("Please enter a valid email address.")
 
 
 # Main App: User Input
-if 'page' in st.session_state and st.session_state.page == "main":
+if st.session_state.page in ["main", "graph"]:
     st.title("Gleem")
     st.markdown("<h3>What do you want to do with AI?</h3>", unsafe_allow_html=True)
-    st.text_input("Enter your request:", key='user_input')
+    user_input = st.text_input("Enter your request:", key='user_input')
 
     if st.button("Submit"):
         # Simulate model scores
-        MODELS = ['GPT-4o', 'Claude 3.5 Sonnet', 'o1-preview', 'Gemini 1.5 Pro', 'Claude 3 Opus', 'Claude 3 Sonnet', 'Mistral Large 2', 'Llama 3.1 405B Instruct']
-        task = st.session_state.user_input
-        data = {"Score": [], "Explanation": []}
-        for model in MODELS:
-            rating = get_model_score(model, task)
-            data['Model'] = MODELS
-            data['Score'].append(rating.score)
-            data['Explanation'].append(rating.explanation)
+        if user_input.strip():
+            MODELS = ['GPT-4o', 'Claude 3.5 Sonnet', 'o1-preview', 'Gemini 1.5 Pro', 'Claude 3 Opus', 'Claude 3 Sonnet', 'Mistral Large 2', 'Llama 3.1 405B Instruct']
+            task = st.session_state.user_input
+            data = {"Score": [], "Explanation": []}
+            for model in MODELS:
+                rating = get_model_score(model, task)
+                data['Model'] = MODELS
+                data['Score'].append(rating.score)
+                data['Explanation'].append(rating.explanation)
 
-        st.session_state.scores = pd.DataFrame(data)
-        st.session_state.scores = st.session_state.scores.sort_values('Score', ascending=False).reset_index(drop=True)
-        st.session_state.page = "graph"
+            st.session_state.scores = pd.DataFrame(data)
+            st.session_state.scores = st.session_state.scores.sort_values('Score', ascending=False).reset_index(drop=True)
+            st.session_state.page = "graph"
+        else:
+            st.warning("Please enter a request before submitting.")
 
 # Page 2: Display Graph
-if 'page' in st.session_state and st.session_state.page == "graph":
-    st.title("Model Scores")
+    if st.session_state.page == "graph":
+        st.title("Model Scores")
 
-    # Display ranked list of models
-    for index, row in st.session_state.scores.iterrows():
-        expander_label = f"{index + 1}. {row['Model']} - Score: {row['Score']:.2f}"
-        with st.expander(expander_label, expanded=False):
-            st.markdown(f"""
-            <div style="font-size: 24px; font-weight: bold;">
-                {expander_label}
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown(f"<p style='font-size: 18px;'>{row['Explanation']}</p>", unsafe_allow_html=True)
-            model_url = get_model_url(row['Model'])
-            if st.button(f"Use {row['Model']}"):
-                open_page(model_url)
-                interactions = track_model_interaction(st.session_state.email)
+        # Display ranked list of models
+        for index, row in st.session_state.scores.iterrows():
+            expander_label = f"{index + 1}. {row['Model']} - Score: {row['Score']:.2f}"
+            with st.expander(expander_label, expanded=False):
+                st.markdown(f"""
+                <div style="font-size: 24px; font-weight: bold;">
+                    {expander_label}
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown(f"<p style='font-size: 18px;'>{row['Explanation']}</p>", unsafe_allow_html=True)
+                model_url = get_model_url(row['Model'])
+                if st.button(f"Use {row['Model']}"):
+                    open_page(model_url)
+                    track_model_interaction(st.session_state.email)
 
-    st.markdown("### We'd love to hear your feedback!")
-    # Initialize feedback in session state if it doesn't exist
-    if 'feedback' not in st.session_state:
-        st.session_state.feedback = ""
+        st.markdown("### We'd love to hear your feedback!")
+        # Initialize feedback in session state if it doesn't exist
+        if 'feedback' not in st.session_state:
+            st.session_state.feedback = ""
 
-    feedback = st.text_area("Please share your thoughts or suggestions:", value=st.session_state.feedback, key="feedback_input")
-    
-    if st.button("Submit Feedback"):
-        if feedback.strip():  # Check if feedback is not empty
-            submit_feedback(st.session_state.email, feedback)
-            st.success("Thank you for your feedback!")
-            st.session_state.feedback = ""  # Clear the feedback in session state
-        else:
-            st.warning("Please enter some feedback before submitting.")
+        feedback = st.text_area("Please share your thoughts or suggestions:", value=st.session_state.feedback, key="feedback_input")
+        
+        if st.button("Submit Feedback"):
+            if feedback.strip():  # Check if feedback is not empty
+                submit_feedback(st.session_state.email, feedback)
+                st.success("Thank you for your feedback!")
+                st.session_state.feedback = ""  # Clear the feedback in session state
+            else:
+                st.warning("Please enter some feedback before submitting.")
 
-    # Update session state with current feedback
-    st.session_state.feedback = feedback
+        # Update session state with current feedback
+        st.session_state.feedback = feedback
 
 #MVP 1: 
 #Testing:
