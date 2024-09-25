@@ -151,13 +151,14 @@ if  st.session_state.page == "email_input":
     email_input = st.text_input("Enter your email to continue:", key='email')
 
     if st.button("Submit Email"):
-        if is_valid_email(st.session_state.email):
-            log_email_to_sheet(st.session_state.email)
-            st.session_state.user_input = ""
-            st.session_state.page = "main"  # Proceed to the main app
-            st.rerun()
-        else:
-            st.error("Please enter a valid email address.")
+        with st.spinner('Submitting...'):
+            if is_valid_email(st.session_state.email):
+                log_email_to_sheet(st.session_state.email)
+                st.session_state.user_input = ""
+                st.session_state.page = "main"  # Proceed to the main app
+                st.rerun()
+            else:
+                st.error("Please enter a valid email address.")
 
 
 # Main App: User Input
@@ -167,22 +168,23 @@ if st.session_state.page in ["main", "graph"]:
     user_input = st.text_input("Enter your request:", key='user_input')
 
     if st.button("Submit"):
-        # Simulate model scores
-        if user_input.strip():
-            MODELS = ['GPT-4o', 'Claude 3.5 Sonnet', 'o1-preview', 'Gemini 1.5 Pro', 'Claude 3 Opus', 'Claude 3 Sonnet', 'Mistral Large 2', 'Llama 3.1 405B Instruct']
-            task = st.session_state.user_input
-            data = {"Score": [], "Explanation": []}
-            for model in MODELS:
-                rating = get_model_score(model, task)
-                data['Model'] = MODELS
-                data['Score'].append(rating.score)
-                data['Explanation'].append(rating.explanation)
+        with st.spinner('Submitting...'):
+            # Simulate model scores
+            if user_input.strip():
+                MODELS = ['GPT-4o', 'Claude 3.5 Sonnet', 'o1-preview', 'Gemini 1.5 Pro', 'Claude 3 Opus', 'Claude 3 Sonnet', 'Mistral Large 2', 'Llama 3.1 405B Instruct']
+                task = st.session_state.user_input
+                data = {"Score": [], "Explanation": []}
+                for model in MODELS:
+                    rating = get_model_score(model, task)
+                    data['Model'] = MODELS
+                    data['Score'].append(rating.score)
+                    data['Explanation'].append(rating.explanation)
 
-            st.session_state.scores = pd.DataFrame(data)
-            st.session_state.scores = st.session_state.scores.sort_values('Score', ascending=False).reset_index(drop=True)
-            st.session_state.page = "graph"
-        else:
-            st.warning("Please enter a request before submitting.")
+                st.session_state.scores = pd.DataFrame(data)
+                st.session_state.scores = st.session_state.scores.sort_values('Score', ascending=False).reset_index(drop=True)
+                st.session_state.page = "graph"
+            else:
+                st.warning("Please enter a request before submitting.")
 
 # Page 2: Display Graph
     if st.session_state.page == "graph":
