@@ -15,6 +15,7 @@ from streamlit.components.v1 import html
 if 'openai_client' not in st.session_state:
     st.session_state.openai_client = OpenAI(api_key=st.secrets['OPENAI_API_KEY'])
 
+global user_email
 
 # Function to validate email
 def is_valid_email(email):
@@ -144,8 +145,7 @@ if 'user_input' not in st.session_state:
 
 # Page: Email Input
 if  st.session_state.page == "email_input":
-    if 'email' not in st.session_state:
-        st.session_state.email = ""
+    
 
     st.title("Welcome to Gleem")
     st.markdown("""
@@ -153,15 +153,14 @@ if  st.session_state.page == "email_input":
     You can enter your request and we will rank the models based on their performance.</br>
     You can also submit feedback and we will use it to improve our models.</br></h5>
     """, unsafe_allow_html=True)
-    email_input = st.text_input("Enter your email to continue:", key='email')
+    email_info = st.text_input("Enter your email to continue:", value=st.session_state.email)
 
     if st.button("Submit Email"):
         with st.spinner('Submitting...'):
-            if is_valid_email(st.session_state.email):
+            if is_valid_email(email_info):
+                st.session_state.email = email_info
                 log_email_to_sheet(st.session_state.email)
-                st.session_state.user_input = ""
                 st.session_state.page = "main"  # Proceed to the main app
-                st.rerun()
             else:
                 st.error("Please enter a valid email address.")
 
