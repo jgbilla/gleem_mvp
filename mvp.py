@@ -148,6 +148,11 @@ if  st.session_state.page == "email_input":
         st.session_state.email = ""
 
     st.title("Welcome to Gleem")
+    st.markdown("""
+    <h5>Gleem is a tool that helps you find the best AI models for your task.</br>
+    You can enter your request and we will rank the models based on their performance.</br>
+    You can also submit feedback and we will use it to improve our models.</br></h5>
+    """, unsafe_allow_html=True)
     email_input = st.text_input("Enter your email to continue:", key='email')
 
     if st.button("Submit Email"):
@@ -163,7 +168,7 @@ if  st.session_state.page == "email_input":
 
 # Main App: User Input
 if st.session_state.page in ["main", "graph"]:
-    st.title("Gleem")
+    st.title("Welcome to Gleem")
     st.markdown("<h3>What do you want to do with AI?</h3>", unsafe_allow_html=True)
     user_input = st.text_input("Enter your request:", key='user_input')
 
